@@ -18,6 +18,28 @@ const config = {
 // assign the config file to our DB
 const db = pgp(config);
 
+
+
+//GET by name
+app.get('/api/restaurants/name/:name', (req, res) => {
+    console.log(req.params.name);
+    console.log(typeof (req.params.name))
+    db.many("SELECT * FROM restaurant WHERE restaurant_name iLike $1", req.params.name)
+        .then(results => {
+            if (results) {
+                console.log(results);
+                res.json(results);
+            } else {
+                res.status(404).json({ error: 'No Results : Name' });
+            }
+        })
+        .catch((e) => {
+            res.status(500).json({
+                error: 'Database Error /api/restaurants/name/:name GET'
+            });
+        })
+});
+
 //GET ALL
 app.get('/api/restaurants', (req, res) => {
     db.query('SELECT * FROM restaurant ORDER BY restaurant.id asc')
@@ -27,21 +49,19 @@ app.get('/api/restaurants', (req, res) => {
         .catch((e) => {
             // handle error
             res.status(404).json({
-                error: 'Database Error'
+                error: 'Database Error /api/restaurants GET'
             })
         })
 })
 
-//GET by name
-app.get('/api/restaurants/name/', (req, res) => {
-    console.log(req.body.name);
-    console.log(typeof (req.body.name))
-    db.any("SELECT * FROM restaurant WHERE restaurant_name iLike '%$<name>%'", req.body.name)
+//GET by id
+app.get('/api/restaurants/category/:cat', (req, res) => {
+    db.manyOrNone('SELECT * FROM restaurant WHERE category = $1', req.params.cat) // $1 is a sanitized number referring to req.params.id
         .then(results => {
             if (results) {
                 res.json(results);
             } else {
-                res.status(404).json({ error: 'No Results : Name' });
+                res.status(404).json({ error: 'No Results' });
             }
         })
         .catch((e) => {
@@ -120,6 +140,19 @@ app.put('/api/restaurants/:id&:distance', (req, res) => {
         })
 })
 
+//DELETE by name
+app.delete('/api/restaurants/name/:name', (req, res) => {
+    console.log(req.params.name);
+    db.result("delete from restaurant WHERE restaurant_name = $1 RETURNING *", req.params.name)
+        .then((result) => {
+            if (result != null) {
+                res.json(`Rows deleted : ${result.rowCount}`);
+            } else {
+                res.json({ error: 'Database error' });
+            }
+        })
+})
+
 //DELETE
 app.delete('/api/restaurants/:id', (req, res) => {
     console.log(req.params.id);
@@ -132,6 +165,8 @@ app.delete('/api/restaurants/:id', (req, res) => {
             }
         })
 })
+
+
 
 
 
